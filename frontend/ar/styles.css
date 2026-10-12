@@ -1,4 +1,8 @@
-/* AR Passport WebAR styles — frontend/ar/styles.css (mobile-first) */
+/* AR Passport WebAR styles — warm theme ported from the reference AR frontend.
+ * Layout/selectors/IDs unchanged (bottom-sheet passport, start overlay, manual bar);
+ * only palette/typography/radii/shadows ported to Inter + warm neutrals.
+ * Reference: frontend/ar/css/ar.css in AR-Digital-Passport bundle.
+ */
 
 /* app.js shows/hides panels via the `hidden` attribute; ID rules below set
  * display:flex, which would otherwise override it (loader/overlay never hid). */
@@ -7,16 +11,24 @@
 }
 
 :root {
-  --bg: #0f172a;
-  --card: #ffffff;
-  --ink: #0f172a;
-  --muted: #64748b;
-  --accent: #2563eb;
-  --ok: #16a34a;
-  --warn: #d97706;
-  --bad: #dc2626;
-  --grey: #6b7280;
-  --radius: 14px;
+  --bg: #f4efe8;
+  --card: #fffdf9;
+  --panel-strong: #f0e9df;
+  --ink: #1b1d1f;
+  --muted: #5f666d;
+  --line: rgba(27, 29, 31, 0.12);
+  --accent: #b86d2f;
+  --accent-strong: #8d4d22;
+  --ok: #2f5d52;
+  --ok-bg: rgba(47, 93, 82, 0.12);
+  --warn: #926019;
+  --warn-bg: rgba(207, 138, 53, 0.15);
+  --bad: #b7514c;
+  --bad-bg: rgba(183, 81, 76, 0.12);
+  --grey: #5f666d;
+  --radius: 16px;
+  --radius-lg: 20px;
+  --shadow: 0 22px 48px rgba(20, 24, 27, 0.08);
 }
 
 * {
@@ -31,8 +43,8 @@ body {
 }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--bg);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: linear-gradient(180deg, #f4efe8 0%, #fbf8f5 100%);
   color: var(--ink);
   font-size: 16px;
   line-height: 1.45;
@@ -52,8 +64,17 @@ a-scene {
   font-size: 0.85rem;
 }
 
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 code {
-  background: #f1f5f9;
+  background: #f5f0ea;
   padding: 0 0.3em;
   border-radius: 4px;
   font-size: 0.9em;
@@ -68,42 +89,43 @@ code {
   left: 0;
   right: 0;
   z-index: 40;
-  padding: 0.5rem 0.9rem;
+  padding: 0.55rem 0.9rem;
   font-size: 0.85rem;
   text-align: center;
+  font-weight: 600;
 }
 
 #backend-status {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: #1b1d1f;
+  color: #f4efe8;
 }
 
 #backend-status[data-kind="error"] {
-  background: #7f1d1d;
+  background: var(--bad);
   color: #fff;
 }
 
 #backend-status[data-kind="ok"] {
-  background: #14532d;
+  background: var(--ok);
   color: #fff;
 }
 
 #status-banner {
-  top: 2.2rem;
+  top: 2.4rem;
 }
 
 #status-banner[data-kind="info"] {
-  background: #1d4ed8;
+  background: var(--accent);
   color: #fff;
 }
 
 #status-banner[data-kind="warn"] {
-  background: #92400e;
+  background: var(--warn);
   color: #fff;
 }
 
 #status-banner[data-kind="error"] {
-  background: #991b1b;
+  background: var(--bad);
   color: #fff;
 }
 
@@ -116,15 +138,17 @@ code {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(2, 6, 23, 0.72);
+  background: rgba(20, 24, 27, 0.45);
   padding: 1rem;
   overflow-y: auto;
 }
 
 .card {
   background: var(--card);
-  border-radius: var(--radius);
-  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
   width: 100%;
   max-width: 26rem;
   max-height: calc(100vh - 2rem);
@@ -132,20 +156,28 @@ code {
 }
 
 .card h1 {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   margin: 0 0 0.5rem;
+  letter-spacing: -0.04em;
+  font-weight: 800;
 }
 
 .card h2 {
   font-size: 1.05rem;
   margin: 1rem 0 0.4rem;
+  letter-spacing: -0.02em;
 }
 
 .target-list {
   margin: 0.3rem 0 0.8rem;
   padding-left: 1.2rem;
   font-size: 0.9rem;
+  display: grid;
+  gap: 0.3rem;
+  color: var(--muted);
 }
+
+.target-list code { color: var(--ink); }
 
 .api-row {
   display: flex;
@@ -166,27 +198,33 @@ button {
   min-height: 44px;
   min-width: 44px;
   padding: 0.6rem 1rem;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #f5f0ea;
   color: var(--ink);
   font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(27, 29, 31, 0.08); }
+
 button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  border: none;
   color: #fff;
 }
 
 button.secondary {
-  background: transparent;
+  background: #f1e7de;
 }
 
 button:disabled {
   opacity: 0.55;
   cursor: wait;
+  transform: none;
+  box-shadow: none;
 }
 
 button:focus-visible,
@@ -194,17 +232,18 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid rgba(184, 109, 47, 0.45);
   outline-offset: 2px;
 }
 
 input,
 select,
 textarea {
+  font: inherit;
   font-size: 1rem;
-  padding: 0.55rem 0.6rem;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
   background: #fff;
   color: var(--ink);
   max-width: 100%;
@@ -215,6 +254,7 @@ label {
   font-weight: 600;
   display: block;
   margin: 0.6rem 0 0.25rem;
+  color: var(--muted);
 }
 
 .btn-row {
@@ -240,18 +280,19 @@ label {
   bottom: 0;
   z-index: 30;
   background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 18px 18px 0 0;
   padding: 0.4rem 1rem calc(1rem + env(safe-area-inset-bottom));
   max-height: 72vh;
   overflow-y: auto;
-  box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow);
 }
 
 .sheet-handle {
   width: 3rem;
   height: 0.3rem;
   border-radius: 999px;
-  background: #cbd5e1;
+  background: var(--line);
   margin: 0.4rem auto 0.6rem;
 }
 
@@ -265,16 +306,18 @@ label {
   width: 5.5rem;
   height: 5.5rem;
   object-fit: cover;
-  border-radius: 10px;
-  background: #e2e8f0;
+  border-radius: 12px;
+  background: #f0e9df;
+  border: 1px solid var(--line);
   flex-shrink: 0;
 }
 
 .img-fallback {
   width: 5.5rem;
   height: 5.5rem;
-  border-radius: 10px;
-  background: #e2e8f0;
+  border-radius: 12px;
+  background: #f0e9df;
+  border: 1px solid var(--line);
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -286,37 +329,44 @@ label {
 .passport-titles h2 {
   margin: 0;
   font-size: 1.1rem;
+  letter-spacing: -0.02em;
 }
 
 .passport-titles .muted {
   margin: 0.15rem 0 0.4rem;
 }
 
-/* status badges: operational green, under_maintenance amber, faulty red, retired grey */
+/* status badges: warm soft pills (same language as dashboard) */
 .badge {
   display: inline-block;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #fff;
-  background: var(--grey);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: #eee9e0;
 }
 
 .badge.status-operational {
-  background: var(--ok);
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .badge.status-under_maintenance {
-  background: var(--warn);
+  background: var(--warn-bg);
+  color: var(--warn);
 }
 
 .badge.status-faulty {
-  background: var(--bad);
+  background: var(--bad-bg);
+  color: var(--bad);
 }
 
 .badge.status-retired {
-  background: var(--grey);
+  background: #eee9e0;
+  color: var(--muted);
 }
 
 #passport-meta {
@@ -327,13 +377,18 @@ label {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.3rem 0;
-  border-top: 1px solid #e2e8f0;
+  padding: 0.45rem 0.6rem;
+  border-top: none;
+  background: #f8f5f2;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 0.4rem;
   font-size: 0.9rem;
 }
 
 .meta-row dt {
   color: var(--muted);
+  font-weight: 600;
 }
 
 .meta-row dd {
@@ -343,11 +398,13 @@ label {
 }
 
 #passport-desc {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.6rem;
+  background: linear-gradient(180deg, #faf7f3 0%, #f3efe8 100%);
+  border: 1px solid rgba(27, 29, 31, 0.06);
+  border-radius: 12px;
+  padding: 0.7rem;
   font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 /* ---------- modals ---------- */
@@ -360,7 +417,7 @@ label {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(2, 6, 23, 0.6);
+  background: rgba(20, 24, 27, 0.45);
   padding: 1rem;
 }
 
@@ -374,14 +431,16 @@ label {
 }
 
 .maint-row {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--line);
+  background: #f8f5f2;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
   font-size: 0.9rem;
 }
 
 .maint-row p {
   margin: 0.3rem 0 0;
+  color: var(--muted);
 }
 
 .maint-row span {
@@ -392,6 +451,7 @@ label {
 
 .error-text {
   color: var(--bad);
+  font-weight: 600;
 }
 
 /* ---------- manual test bar ---------- */
@@ -406,15 +466,17 @@ label {
   gap: 0.4rem;
   align-items: center;
   flex-wrap: wrap;
-  background: rgba(15, 23, 42, 0.92);
-  color: #e2e8f0;
+  background: rgba(27, 29, 31, 0.94);
+  color: #f4efe8;
   padding: 0.5rem 0.7rem calc(0.5rem + env(safe-area-inset-bottom));
   font-size: 0.85rem;
 }
 
+#manual-bar .muted { color: #cfc6ba; }
+
 #manual-bar label {
   margin: 0;
-  color: #e2e8f0;
+  color: #f4efe8;
 }
 
 #manual-bar input {
@@ -424,7 +486,7 @@ label {
 /* When the passport sheet is open it sits above the manual bar */
 #passport:not([hidden]) ~ #manual-bar {
   bottom: auto;
-  top: 2.2rem;
+  top: 2.4rem;
 }
 
 /* ---------- scan hint / errors / loader ---------- */
@@ -435,11 +497,12 @@ label {
   left: 50%;
   transform: translateX(-50%);
   z-index: 25;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(27, 29, 31, 0.88);
   color: #fff;
   border-radius: 999px;
-  padding: 0.45rem 1rem;
+  padding: 0.5rem 1rem;
   font-size: 0.85rem;
+  font-weight: 600;
   white-space: nowrap;
   max-width: 94vw;
   overflow: hidden;
@@ -452,9 +515,9 @@ label {
   left: 1rem;
   right: 1rem;
   z-index: 25;
-  background: #7f1d1d;
+  background: var(--bad);
   color: #fff;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 0.7rem 0.9rem;
   font-size: 0.9rem;
 }
@@ -468,7 +531,7 @@ label {
   gap: 0.6rem;
   align-items: center;
   justify-content: center;
-  background: rgba(2, 6, 23, 0.55);
+  background: rgba(20, 24, 27, 0.45);
   color: #fff;
 }
 
@@ -488,7 +551,7 @@ label {
 }
 
 .noscript {
-  color: #fff;
+  color: var(--ink);
   text-align: center;
   padding: 2rem;
 }
