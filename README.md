@@ -1,4 +1,6 @@
 # AR Passport — WebAR + Dashboard over Express/Postgres (Unity legacy kept)
+https://arvrdashboard.netlify.app/
+https://arvrca3.netlify.app/
 
 Problem: field equipment needs a scannable identity — point a phone at a
 machine marker and see its passport (specs, service history), file issues, and
