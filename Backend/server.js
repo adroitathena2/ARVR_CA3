@@ -21,6 +21,26 @@ app.use(express.json({ limit: '1mb' }));
 
 const db = require('./db');
 
+// Service index — so opening the backend origin in a browser shows
+// where to go instead of Express's default "Cannot GET /" text.
+app.get('/', (req, res) => res.json({
+  ok: true,
+  service: 'ar-passport-api',
+  message: 'AR Passport REST API. Use GET /health for liveness, /api/... for data.',
+  health: '/health',
+  endpoints: [
+    'GET /health',
+    'GET /api/assets',
+    'GET /api/assets/:id',
+    'GET /api/assets/marker/:markerId',
+    'GET /api/assets/:id/maintenance',
+    'GET /api/issues',
+    'POST /api/issues',
+    'PATCH /api/issues/:id/status',
+    'GET /api/locations'
+  ]
+}));
+
 // Liveness stays 200 (so hosts don't restart-loop on a DB blip); `db` reports 'memory' | 'up' | 'down'.
 app.get('/health', async (req, res) => res.json({ ok: true, time: new Date().toISOString(), db: await db.ping() }));
 

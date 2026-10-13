@@ -1,0 +1,4 @@
+# Dashboard site has no /ar/ path — the scanner is a separate Netlify site.
+# Redirect old relative links / bookmarks instead of 404ing.
+/ar/  https://arvrca3.netlify.app/  302!
+/ar   https://arvrca3.netlify.app/  302!

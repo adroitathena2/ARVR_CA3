@@ -7,6 +7,8 @@
  */
 (function () {
   var PAGE_SIZE = 10;
+  // Render free tier can take ~30-60s to wake; fail fast so Retry stays usable.
+  var REQUEST_TIMEOUT_MS = 15000;
   var ASSET_STATUSES = ['operational', 'under_maintenance', 'faulty', 'retired'];
   var ISSUE_STATUSES = ['open', 'in_progress', 'resolved', 'rejected', 'closed'];
   var ID_PATTERN = /^AST-[0-9]{3,}$/;
@@ -45,6 +47,8 @@
 
   var state = {
     online: true,
+    loading: false,
+    loadPromise: null,
     assets: [],
     issues: [],
     locations: [],
@@ -87,9 +91,22 @@
     var url = apiBase() + path;
     var opts = options || {};
     opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    var controller = null;
+    var timer = null;
+    try {
+      if (typeof AbortController !== 'undefined') {
+        controller = new AbortController();
+        opts.signal = controller.signal;
+        timer = setTimeout(function () {
+          try { controller.abort(); } catch (abortErr) { /* ignore */ }
+        }, REQUEST_TIMEOUT_MS);
+      }
+    } catch (e) { controller = null; }
+    function clearTimer() { if (timer) { clearTimeout(timer); timer = null; } }
     return fetch(url, opts).then(function (res) {
-      if (res.status === 204) return null;
+      if (res.status === 204) { clearTimer(); return null; }
       return res.json().catch(function () { return null; }).then(function (body) {
+        clearTimer();
         if (!res.ok) {
           var err = new Error(friendlyError(res.status, body, null));
           err.status = res.status;
@@ -98,8 +115,12 @@
         return body;
       });
     }).catch(function (e) {
+      clearTimer();
       if (e && e.status) throw e; // already friendly (backend envelope parsed)
-      throw new Error('Could not reach the backend. Check the API base URL and that the server is running.');
+      if (e && (e.name === 'AbortError' || e.code === 20)) {
+        throw new Error('Backend is taking too long (the free-tier host can need ~30–60s to wake). Wait a moment, then press Retry connection.');
+      }
+      throw new Error('Could not reach the backend at ' + apiBase() + '. Check the API base URL and that the server is running.');
     });
   }
 
@@ -188,13 +209,34 @@
 
   /* ---------- data loading ---------- */
 
+  function isLocalhostUrl(u) {
+    return /(^|\/\/)(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(String(u || ''));
+  }
+
+  function isHttpsPage() {
+    try { return !!(window.location && window.location.protocol === 'https:'); }
+    catch (e) { return false; }
+  }
+
   function setConn(online) {
     state.online = online;
+    var base = '';
+    try { base = apiBase(); } catch (e) { base = ''; }
     var el = $('connStatus');
-    el.textContent = online ? 'Online' : 'Offline (sample data)';
+    el.textContent = online ? 'Online · ' + base : 'Offline (sample data) · tried ' + base;
     el.classList.toggle('online', online);
     el.classList.toggle('offline', !online);
     $('offlineBanner').hidden = online;
+    var detail = $('offlineDetail');
+    if (detail) {
+      if (online) {
+        detail.textContent = '';
+      } else if (isHttpsPage() && /^http:\/\//i.test(base) && isLocalhostUrl(base)) {
+        detail.textContent = 'Tried ' + base + ' — browsers block http://localhost from an HTTPS page. Type your Render backend origin (https://…) in the API base URL field above and press Save.';
+      } else {
+        detail.textContent = 'Tried ' + base + '. The free-tier backend can need ~30–60s to wake — wait a moment, then press Retry connection.';
+      }
+    }
     $('addAssetBtn').disabled = !online;
   }
 
@@ -206,12 +248,32 @@
     afterDataLoaded();
   }
 
-  function loadAll() {
-    $('assetsLoading').hidden = false;
-    $('assetsError').hidden = true;
-    $('issuesLoading').hidden = false;
-    $('issuesError').hidden = true;
-    return Promise.all([
+  function setBusy(busy, label) {
+    state.loading = busy;
+    ['retryBtn', 'refreshBtn', 'assetsRetryBtn', 'issuesRetryBtn'].forEach(function (id) {
+      var b = $(id);
+      if (b) b.disabled = busy;
+    });
+    var rb = $('retryBtn');
+    if (rb) rb.textContent = busy ? (label || 'Retrying…') : 'Retry connection';
+    if (busy) {
+      $('assetsLoading').hidden = false;
+      $('assetsError').hidden = true;
+      $('issuesLoading').hidden = false;
+      $('issuesError').hidden = true;
+      $('assetsLoading').textContent = label || 'Loading assets…';
+      $('issuesLoading').textContent = label || 'Loading issues…';
+    }
+  }
+
+  function loadAll(opts) {
+    opts = opts || {};
+    // Guard against parallel storms (double-clicks / Retry while loading).
+    if (state.loading && state.loadPromise) return state.loadPromise;
+    var isRetry = !!opts.isRetry;
+    setBusy(true, isRetry ? 'Retrying backend…' : 'Loading assets…');
+    if (isRetry) toast('Retrying backend at ' + apiBase() + '…');
+    state.loadPromise = Promise.all([
       api.listAssets(),
       api.listIssues().catch(function () { return []; }),
       api.listLocations().catch(function () { return []; })
@@ -223,13 +285,22 @@
       $('assetsLoading').hidden = true;
       $('issuesLoading').hidden = true;
       afterDataLoaded();
+      if (isRetry) toast('Back online — loaded ' + state.assets.length + ' assets.');
     }).catch(function (e) {
       $('assetsLoading').hidden = true;
       $('issuesLoading').hidden = true;
       // Reads degrade to sample data (banner on); writes stay disabled.
       useSampleData();
       toast(e && e.message ? e.message : 'Could not reach the backend. Showing sample data.');
+    }).then(function () {
+      setBusy(false);
+      state.loadPromise = null;
     });
+    return state.loadPromise;
+  }
+
+  function retryLoad() {
+    loadAll({ isRetry: true });
   }
 
   function afterDataLoaded() {
@@ -574,12 +645,20 @@
 
   function wire() {
     $('apiUrlInput').value = apiBase();
+    // Point at the live AR site (separate Netlify site); allow env/query override.
+    try {
+      var arLink = $('arViewLink');
+      if (arLink && window.ARPassportConfig && window.ARPassportConfig.getArScannerUrl) {
+        arLink.href = window.ARPassportConfig.getArScannerUrl();
+      }
+    } catch (e) { /* keep the static href fallback */ }
     $('apiUrlForm').addEventListener('submit', function (e) {
       e.preventDefault();
       try {
-        window.ARPassportConfig.setApiBaseUrl($('apiUrlInput').value);
+        var saved = window.ARPassportConfig.setApiBaseUrl($('apiUrlInput').value);
+        $('apiUrlInput').value = saved;
         toast('API base URL saved.');
-        loadAll();
+        loadAll({ isRetry: true });
       } catch (err) {
         toast(err && err.message ? err.message : 'That URL looks invalid.');
       }
@@ -601,10 +680,10 @@
       state.issueStatusFilter = e.target.value; renderIssues();
     });
 
-    $('refreshBtn').addEventListener('click', loadAll);
-    $('retryBtn').addEventListener('click', loadAll);
-    $('assetsRetryBtn').addEventListener('click', loadAll);
-    $('issuesRetryBtn').addEventListener('click', loadAll);
+    $('refreshBtn').addEventListener('click', function () { loadAll({ isRetry: true }); });
+    $('retryBtn').addEventListener('click', retryLoad);
+    $('assetsRetryBtn').addEventListener('click', retryLoad);
+    $('issuesRetryBtn').addEventListener('click', retryLoad);
     $('addAssetBtn').addEventListener('click', function () { openForm(null); });
     $('assetRows').addEventListener('click', onTableClick);
     $('issueList').addEventListener('change', onIssueChange);

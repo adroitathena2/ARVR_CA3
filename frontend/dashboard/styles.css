@@ -55,6 +55,7 @@ body {
   display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; flex-wrap: wrap;
 }
 .banner-warn { background: var(--warn-bg); border-color: #f5c66b; color: #4a2c0a; }
+.banner-detail { font-size: 0.85rem; overflow-wrap: anywhere; }
 
 /* Layout */
 .container { max-width: 1100px; margin: 0 auto; padding: 1rem; }
