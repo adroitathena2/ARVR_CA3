@@ -8,6 +8,10 @@ Point a phone at a machine marker and see its **digital passport** — specs, lo
 
 No app install needed. The scanner runs in the browser, the dashboard is a static site, both talk to one Express + Postgres API.
 
+<img width="1917" height="968" alt="image" src="https://github.com/user-attachments/assets/bef74fdf-989a-48e9-963a-54c1632b5b10" />
+<img width="1163" height="725" alt="image" src="https://github.com/user-attachments/assets/76c77118-8712-43ae-a57b-a9bcad948e10" />
+
+
 ## Why this exists
 
 Lab and classroom equipment (projectors, printers, lab gear) breaks, gets serviced, and gets reported across chats and notebooks. This project puts a scannable image marker on each asset so anyone can pull its record in seconds:
